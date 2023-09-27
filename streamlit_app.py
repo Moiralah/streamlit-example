@@ -1,38 +1,62 @@
-from collections import namedtuple
-import altair as alt
-import math
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
 
-"""
-# Welcome to Streamlit!
+# Load the data from the provided URL
+url = "https://raw.githubusercontent.com/Moiralah/blob/main/owid-covid-data%20ASEAN%201.csv"
+df = pd.read_csv(url)
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
+# Set option to display float values with two decimal places
+pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+# Fill NaN values with 0
+df.fillna(0, inplace=True)
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+# Create a Streamlit app title
+st.title("COVID-19 ASEAN 2020-2022 Data Analysis")
 
+# Sidebar for selecting locations
+selected_location = st.sidebar.selectbox("Select a Location", df['location'].unique())
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
+# Filter data based on selected location
+filtered_df = df[df['location'] == selected_location]
 
-    Point = namedtuple('Point', 'x y')
-    data = []
+# Create subplots for each metric
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 8))
 
-    points_per_turn = total_points / num_turns
+# Plot new cases
+axes[0, 0].plot(filtered_df['date'], filtered_df['new_cases'])
+axes[0, 0].set_title('New Cases')
+axes[0, 0].set_xlabel('Date')
+axes[0, 0].set_ylabel('Count')
 
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
+# Plot new deaths
+axes[0, 1].plot(filtered_df['date'], filtered_df['new_deaths'], color='red')
+axes[0, 1].set_title('New Deaths')
+axes[0, 1].set_xlabel('Date')
+axes[0, 1].set_ylabel('Count')
 
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+# Plot new vaccinations
+axes[1, 0].plot(filtered_df['date'], filtered_df['new_vaccinations'], color='green')
+axes[1, 0].set_title('New Vaccinations')
+axes[1, 0].set_xlabel('Date')
+axes[1, 0].set_ylabel('Count')
+
+# Plot stringency index
+axes[1, 1].plot(filtered_df['date'], filtered_df['stringency_index'], color='purple')
+axes[1, 1].set_title('Stringency Index')
+axes[1, 1].set_xlabel('Date')
+axes[1, 1].set_ylabel('Index')
+
+# Adjust layout
+plt.tight_layout()
+
+# Display plots
+st.pyplot(fig)
+
+# Show population density for the selected location
+st.write(f"Population Density for {selected_location}: {filtered_df['population_density'].iloc[0]}")
+
+# Display data table for the selected location
+st.write("Data for the selected location:")
+st.write(filtered_df)
